@@ -1,0 +1,59 @@
+[project]
+name = "molecular_qm_gaussian"
+dynamic = ["version"]
+description = "Gaussian 16 capabilities for molecular quantum mechanics within the Simstack framework"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [
+  { name = "Wolfgang Wenzel", email = "wolfgang.wenzel@kit.edu" }
+]
+dependencies = [
+    "molecular_qm_models",
+    "simstack",
+]
+
+[project.entry-points."simstack.modules"]
+molecular_qm_gaussian = "molecular_qm_gaussian"
+
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
+fallback-version = "0.1.0.dev0"
+
+[tool.hatch.version.raw-options]
+version_scheme = "release-branch-semver"
+local_scheme = "no-local-version"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.uv.sources]
+molecular_qm_models = { git = "https://github.com/simstack/molecular_qm_models.git" }
+simstack = { git = "https://github.com/simstack/simstack.git", rev = "fix-git-pull" }
+
+[tool.uv]
+override-dependencies = [
+    "molecular_qm_models @ git+https://github.com/simstack/molecular_qm_models.git",
+    "simstack @ git+https://github.com/simstack/simstack.git@fix-git-pull",
+]
+
+# hatch-vcs reads git tags; python-semantic-release creates them from conventional commits.
+[tool.semantic_release]
+allow_zero_version = true
+major_on_zero = false
+tag_format = "v{version}"
+commit_parser = "conventional"
+
+[tool.semantic_release.branches.main]
+match = "(main|master)"
+prerelease = false
+
+[tool.semantic_release.changelog]
+mode = "update"
+
+[tool.semantic_release.remote]
+type = "github"

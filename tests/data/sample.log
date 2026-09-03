@@ -1,0 +1,20 @@
+ Charge =  0 Multiplicity = 1
+ SCF Done:  E(RB3LYP) =  -76.123456     A.U. after   8 cycles
+
+                         Standard orientation:
+ ---------------------------------------------------------------------
+ Center     Atomic      Atomic             Coordinates (Angstroms)
+ Number     Number       Type             X           Y           Z
+ ---------------------------------------------------------------------
+      1          8           0        0.000000    0.000000    0.117300
+      2          1           0        0.000000    0.757200   -0.469200
+      3          1           0        0.000000   -0.757200   -0.469200
+ ---------------------------------------------------------------------
+
+ Excitation energies and oscillator strengths:
+ Excited State   1:      Singlet-A      5.1234 eV  241.99 nm  f=0.0123  <S**2>=0.000
+      5 ->  6         0.70123
+ Excited State   2:      Singlet-A      6.0000 eV  206.64 nm  f=0.0456  <S**2>=0.000
+      4 ->  6         0.65000
+
+ Normal termination of Gaussian 16
