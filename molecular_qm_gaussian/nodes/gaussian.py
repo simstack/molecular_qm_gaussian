@@ -32,6 +32,58 @@ _DISPERSION_ROUTE = {
     "D3BJ": "GD3BJ",
 }
 
+# Model/ORCA names -> Gaussian 16 route keywords. Bare "PBE" is ambiguous (QPErr).
+_GAUSSIAN_FUNCTIONAL = {
+    "PBE": "PBEPBE",
+    "BLYP": "BLYP",
+    "BP86": "BP86",
+    "PW91": "PW91PW91",
+    "OLYP": "OLYP",
+    "B97D": "B97D",
+    "B3LYP": "B3LYP",
+    "PBE0": "PBE1PBE",
+    "HSE06": "HSEH1PBE",
+    "O3LYP": "O3LYP",
+    "X3LYP": "X3LYP",
+    "BHANDHLYP": "BHandHLYP",
+    "TPSS": "TPSSTPSS",
+    "M06-L": "M06L",
+    "TPSSh": "TPSSh",
+    "M06": "M06",
+    "M06-2X": "M062X",
+    "B2PLYP": "B2PLYP",
+    "CAM-B3LYP": "CAM-B3LYP",
+    "wB97X-D": "WB97XD",
+    "wB97X": "WB97X",
+    "wB97": "WB97",
+    "LC-BLYP": "LC-BLYP",
+    "MN15": "MN15",
+}
+
+_GAUSSIAN_BASIS = {
+    "STO3G": "STO-3G",
+    "STO6G": "STO-6G",
+    "6-31G": "6-31G",
+    "6-31G*": "6-31G*",
+    "6-31G**": "6-31G**",
+    "cc-pVDZ": "cc-pVDZ",
+    "cc-pVTZ": "cc-pVTZ",
+    "cc-pVQZ": "cc-pVQZ",
+    "cc-pV5Z": "cc-pV5Z",
+    "def2-SVP": "Def2SVP",
+    "def2-SVPD": "Def2SVPD",
+    "def2-TZVP": "Def2TZVP",
+    "def2-TZVPD": "Def2TZVPD",
+    "def2-TZVPP": "Def2TZVPP",
+    "def2-TZVPPD": "Def2TZVPPD",
+    "def2-QZVP": "Def2QZVP",
+    "def2-QZVPD": "Def2QZVPD",
+    "def2-QZVPP": "Def2QZVPP",
+    "def2-QZVPPD": "Def2QZVPPD",
+    "aug-cc-pVDZ": "aug-cc-pVDZ",
+    "aug-cc-pVTZ": "aug-cc-pVTZ",
+}
+
 
 def _enum_value(value):
     if value is None:
@@ -121,11 +173,23 @@ def _link0_parameters(parent_parameters) -> dict:
 
 
 def _functional_name(qm_input: QMInput) -> str:
-    return str(_enum_value(qm_input.functional.functional)).lower()
+    raw = str(_enum_value(qm_input.functional.functional))
+    mapped = _GAUSSIAN_FUNCTIONAL.get(raw)
+    if mapped is None:
+        raise ValueError(
+            f"Functional {raw!r} is not a Gaussian 16 route keyword"
+        )
+    return mapped
 
 
 def _basis_set_name(qm_input: QMInput) -> str:
-    return str(_enum_value(qm_input.basis_set.basis_set)).lower()
+    raw = str(_enum_value(qm_input.basis_set.basis_set))
+    mapped = _GAUSSIAN_BASIS.get(raw)
+    if mapped is None:
+        raise ValueError(
+            f"Basis set {raw!r} is not a Gaussian 16 route keyword"
+        )
+    return mapped
 
 
 @node

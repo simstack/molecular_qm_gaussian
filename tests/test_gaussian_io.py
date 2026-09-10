@@ -11,6 +11,8 @@ from molecular_qm_gaussian.lib.gaussian_excited_states_parser import (
 from molecular_qm_gaussian.lib.gaussian_io import GaussianInput, GaussianOutput
 from molecular_qm_gaussian.nodes.gaussian import (
     GAUSSIAN_RESULT_FILES,
+    _basis_set_name,
+    _functional_name,
     _link0_parameters,
     gaussian as gaussian_node,
 )
@@ -92,6 +94,25 @@ def test_link0_rejects_empty_and_unknown_mem():
         _link0_parameters(SimpleNamespace(slurm_parameters=SimpleNamespace(mem="  ")))
     with pytest.raises(ValueError, match="slurm_parameters.mem"):
         _link0_parameters(SimpleNamespace(slurm_parameters=SimpleNamespace(mem="lots")))
+
+
+def test_functional_and_basis_map_to_gaussian_keywords():
+    assert _functional_name(SimpleNamespace(functional=SimpleNamespace(functional="PBE"))) == "PBEPBE"
+    assert _functional_name(SimpleNamespace(functional=SimpleNamespace(functional="PBE0"))) == "PBE1PBE"
+    assert _basis_set_name(SimpleNamespace(basis_set=SimpleNamespace(basis_set="def2-SVP"))) == "Def2SVP"
+    gin = GaussianInput(
+        mol=_water(),
+        charge=0,
+        spin_multiplicity=1,
+        functional="PBEPBE",
+        basis_set="Def2SVP",
+        route_parameters={"opt": "tight", "freq": "", "pop": "full"},
+    )
+    assert "#P PBEPBE/Def2SVP opt=tight freq pop=full" in gin.to_str()
+    with pytest.raises(ValueError, match="Functional"):
+        _functional_name(SimpleNamespace(functional=SimpleNamespace(functional="GFN2-xTB")))
+    with pytest.raises(ValueError, match="Basis set"):
+        _basis_set_name(SimpleNamespace(basis_set=SimpleNamespace(basis_set="def2-mSVP")))
 
 
 def test_scratch_inputs_omit_missing_checkpoint():
