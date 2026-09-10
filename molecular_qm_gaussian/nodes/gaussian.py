@@ -279,7 +279,7 @@ async def gaussian(qm_input: QMInput, **kwargs) -> SimstackResult:
         for out_file in glob.glob("*.chk"):
             file_stack = FileStack.from_local_file(
                 out_file,
-                in_memory=True,
+                in_memory=False,
                 is_hashable=True,
                 secure_source=True,
                 task_id=task_id,
