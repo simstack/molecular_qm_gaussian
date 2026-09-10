@@ -1,6 +1,6 @@
 import glob
 import logging
-import subprocess
+from pathlib import Path
 
 from molecular_qm_models import (
     GridType,
@@ -24,7 +24,6 @@ from molecular_qm_gaussian.lib.gaussian_io import GaussianInput, GaussianOutput
 
 logger = logging.getLogger("GaussianNode")
 
-GAUSSIAN_INPUT_FILES = ["gaussian.com", "gaussian.chk"]
 GAUSSIAN_RESULT_FILES = ["gaussian.log", "gaussian.chk"]
 
 _DISPERSION_ROUTE = {
@@ -129,14 +128,6 @@ def _basis_set_name(qm_input: QMInput) -> str:
     return str(_enum_value(qm_input.basis_set.basis_set)).lower()
 
 
-def gaussian_run_command() -> int:
-    try:
-        context.resource_config.run("gaussian", GAUSSIAN_INPUT_FILES, GAUSSIAN_RESULT_FILES)
-        return 0
-    except subprocess.CalledProcessError as exc:
-        return exc.returncode
-
-
 @node
 async def gaussian(qm_input: QMInput, **kwargs) -> SimstackResult:
     """Run a Gaussian calculation from ``QMInput`` and parse the log.
@@ -194,9 +185,13 @@ async def gaussian(qm_input: QMInput, **kwargs) -> SimstackResult:
         return node_runner.fail(f"error creating Gaussian input file: {str(exc)} ")
 
     try:
-        returncode = gaussian_run_command()
-        if returncode != 0:
-            raise RuntimeError(f"execution of Gaussian failed with return code {returncode}")
+        input_files = ["gaussian.com"]
+        if Path("gaussian.chk").exists():
+            input_files.append("gaussian.chk")
+        node_runner.stage(input_files=input_files)
+        if not node_runner.execute("gaussian"):
+            raise RuntimeError("execution of Gaussian failed")
+        node_runner.retrieve(output_files=GAUSSIAN_RESULT_FILES)
 
         gout = GaussianOutput("gaussian.log")
         node_runner.info("output file parsed")

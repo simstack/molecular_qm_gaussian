@@ -1,5 +1,6 @@
 from pathlib import Path
 from types import SimpleNamespace
+import inspect
 
 import pytest
 from molecular_qm_models import Molecule
@@ -8,7 +9,11 @@ from molecular_qm_gaussian.lib.gaussian_excited_states_parser import (
     parse_gaussian_excited_states_file,
 )
 from molecular_qm_gaussian.lib.gaussian_io import GaussianInput, GaussianOutput
-from molecular_qm_gaussian.nodes.gaussian import _link0_parameters
+from molecular_qm_gaussian.nodes.gaussian import (
+    GAUSSIAN_RESULT_FILES,
+    _link0_parameters,
+    gaussian as gaussian_node,
+)
 
 DATA = Path(__file__).parent / "data"
 
@@ -87,3 +92,11 @@ def test_link0_rejects_empty_and_unknown_mem():
         _link0_parameters(SimpleNamespace(slurm_parameters=SimpleNamespace(mem="  ")))
     with pytest.raises(ValueError, match="slurm_parameters.mem"):
         _link0_parameters(SimpleNamespace(slurm_parameters=SimpleNamespace(mem="lots")))
+
+
+def test_scratch_inputs_omit_missing_checkpoint():
+    source = inspect.getsource(gaussian_node)
+    assert 'if Path("gaussian.chk").exists():' in source
+    assert 'input_files.append("gaussian.chk")' in source
+    assert GAUSSIAN_RESULT_FILES == ["gaussian.log", "gaussian.chk"]
+    assert "GAUSSIAN_INPUT_FILES" not in source
