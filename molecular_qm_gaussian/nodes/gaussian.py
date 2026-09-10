@@ -96,8 +96,25 @@ def _link0_parameters(parent_parameters) -> dict:
     slurm = getattr(parent_parameters, "slurm_parameters", None)
     if slurm is None:
         return link0
-    if getattr(slurm, "mem", None):
-        link0["%mem"] = slurm.mem
+    mem = getattr(slurm, "mem", None)
+    if mem is not None:
+        text = str(mem).strip().upper()
+        if not text:
+            raise ValueError("slurm_parameters.mem is empty")
+        number = None
+        unit = None
+        for suffix in ("KW", "MW", "GW", "TW", "KB", "MB", "GB", "TB"):
+            if text.endswith(suffix):
+                number, unit = text[: -len(suffix)], suffix
+                break
+        if unit is None and text[-1] in "KMGT":
+            number, unit = text[:-1], f"{text[-1]}B"
+        if number is None or not number.isdigit():
+            raise ValueError(
+                f"slurm_parameters.mem={mem!r} is not a Gaussian %mem value; "
+                "use a Slurm size such as 10G or a Gaussian size such as 10GB"
+            )
+        link0["%mem"] = f"{number}{unit}"
     tasks = getattr(slurm, "tasks_per_node", None)
     if tasks:
         link0["%nprocshared"] = str(tasks)

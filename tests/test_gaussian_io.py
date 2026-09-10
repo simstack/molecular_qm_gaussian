@@ -1,11 +1,14 @@
 from pathlib import Path
+from types import SimpleNamespace
 
+import pytest
 from molecular_qm_models import Molecule
 
 from molecular_qm_gaussian.lib.gaussian_excited_states_parser import (
     parse_gaussian_excited_states_file,
 )
 from molecular_qm_gaussian.lib.gaussian_io import GaussianInput, GaussianOutput
+from molecular_qm_gaussian.nodes.gaussian import _link0_parameters
 
 DATA = Path(__file__).parent / "data"
 
@@ -61,3 +64,26 @@ def test_excited_states_parser():
     assert len(transitions.row) == 2
     assert transitions.row[0]["orb1"] == 5
     assert transitions.row[0]["orb2"] == 6
+
+
+def test_link0_converts_slurm_mem_g_to_gb():
+    params = SimpleNamespace(
+        slurm_parameters=SimpleNamespace(mem="10G", tasks_per_node=8)
+    )
+    link0 = _link0_parameters(params)
+    assert link0["%mem"] == "10GB"
+    assert link0["%nprocshared"] == "8"
+
+
+def test_link0_keeps_gaussian_mem_units():
+    params = SimpleNamespace(
+        slurm_parameters=SimpleNamespace(mem="2GB", tasks_per_node=None)
+    )
+    assert _link0_parameters(params)["%mem"] == "2GB"
+
+
+def test_link0_rejects_empty_and_unknown_mem():
+    with pytest.raises(ValueError, match="slurm_parameters.mem is empty"):
+        _link0_parameters(SimpleNamespace(slurm_parameters=SimpleNamespace(mem="  ")))
+    with pytest.raises(ValueError, match="slurm_parameters.mem"):
+        _link0_parameters(SimpleNamespace(slurm_parameters=SimpleNamespace(mem="lots")))
