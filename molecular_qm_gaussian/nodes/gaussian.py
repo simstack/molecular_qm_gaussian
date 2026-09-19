@@ -1,6 +1,5 @@
 import glob
 import logging
-import shutil
 from pathlib import Path
 
 from molecular_qm_models import (
@@ -18,7 +17,6 @@ from simstack.core.node_runner import NodeRunner
 from simstack.core.simstack_result import SimstackResult
 from simstack.models.file_list import FileList
 from simstack.models.files import FileStack
-from simstack.models.parameters import Parameters, Queue
 
 from molecular_qm_gaussian.lib.gaussian_excited_states_parser import (
     parse_gaussian_excited_states_file,
@@ -317,44 +315,3 @@ async def gaussian(qm_input: QMInput, **kwargs) -> SimstackResult:
         raise RuntimeError(f"task_id: {task_id} Gaussian Failed {str(exc)}") from exc
     finally:
         await node_runner.make_info_files("*.com")
-
-
-@node(parameters=Parameters(queue=Queue.SLURM_QUEUE.value, in_docker=False))
-async def formchk_checkpoint(file_stack: FileStack, **kwargs) -> SimstackResult:
-    """Convert a Gaussian binary ``.chk`` to formatted ``.fchk``.
-
-    ``gen_fcc_state`` / ``gen_fcc_dipfile`` cannot read ``.chk``. This node runs
-    on the Gaussian host (not the fcctools image) via ``[resource.program.formchk]``.
-
-    SimstackResult:
-        file_stack (simstack.models.files.FileStack): The formatted checkpoint.
-    """
-    node_runner = kwargs["node_runner"]
-    local_file = Path(file_stack.get())
-    suffix = local_file.suffix.lower()
-    if suffix == ".fchk":
-        node_runner.file_stack = file_stack
-        return node_runner.succeed()
-    if suffix != ".chk":
-        return node_runner.fail(
-            f"formchk_checkpoint expected .chk or .fchk, got {local_file.name}"
-        )
-
-    dest = Path("gaussian.chk")
-    if local_file.resolve() != dest.resolve():
-        shutil.copy2(local_file, dest)
-    node_runner.stage(input_files=["gaussian.chk"])
-    if not node_runner.execute("formchk"):
-        return node_runner.fail("formchk failed to convert gaussian.chk")
-    node_runner.retrieve(output_files=["gaussian.fchk"])
-    if not Path("gaussian.fchk").exists():
-        return node_runner.fail("formchk did not write gaussian.fchk")
-    fchk_stack = FileStack.from_local_file(
-        "gaussian.fchk",
-        in_memory=False,
-        is_hashable=True,
-        secure_source=True,
-    )
-    await context.db.save(fchk_stack)
-    node_runner.file_stack = fchk_stack
-    return node_runner.succeed()

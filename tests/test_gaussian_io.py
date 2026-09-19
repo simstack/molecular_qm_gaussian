@@ -14,7 +14,6 @@ from molecular_qm_gaussian.nodes.gaussian import (
     _basis_set_name,
     _functional_name,
     _link0_parameters,
-    formchk_checkpoint,
     gaussian as gaussian_node,
 )
 
@@ -135,11 +134,3 @@ def test_checkpoint_files_are_passed_into_qm_result():
     retrieve_at = source.index("node_runner.retrieve(output_files=GAUSSIAN_RESULT_FILES)")
     assert formchk_at < retrieve_at
     assert "node_runner.result.files.append" not in source
-
-
-def test_formchk_checkpoint_converts_binary_chk():
-    source = inspect.getsource(formchk_checkpoint)
-    module_source = inspect.getsource(inspect.getmodule(formchk_checkpoint))
-    assert 'node_runner.execute("formchk")' in source
-    assert 'output_files=["gaussian.fchk"]' in source
-    assert "in_docker=False" in module_source
