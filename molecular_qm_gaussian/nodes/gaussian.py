@@ -15,6 +15,7 @@ from simstack.core.definitions import TaskStatus
 from simstack.core.node import node
 from simstack.core.node_runner import NodeRunner
 from simstack.core.simstack_result import SimstackResult
+from simstack.models.file_list import FileList
 from simstack.models.files import FileStack
 
 from molecular_qm_gaussian.lib.gaussian_excited_states_parser import (
@@ -264,19 +265,14 @@ async def gaussian(qm_input: QMInput, **kwargs) -> SimstackResult:
         if molecule is None:
             raise RuntimeError(f"task_id: {task_id} Gaussian output has no final structure")
 
-        node_runner.result = QMResult(
-            scf_converged=gout.properly_terminated,
-            final_energy=gout.final_energy,
-            energies=gout.energies,
-            final_structure=molecule,
-            structures=MoleculeList(),
-            task_status=TaskStatus.COMPLETED,
-        )
-        node_runner.result.excited_states, node_runner.result.excited_state_transitions = (
-            parse_gaussian_excited_states_file("gaussian.log")
-        )
+        chk_paths = sorted(glob.glob("*.chk"))
+        if not any(Path(path).name == "gaussian.chk" for path in chk_paths):
+            raise RuntimeError(
+                f"task_id: {task_id} Gaussian did not write gaussian.chk"
+            )
 
-        for out_file in glob.glob("*.chk"):
+        file_list = FileList()
+        for out_file in chk_paths:
             file_stack = FileStack.from_local_file(
                 out_file,
                 in_memory=False,
@@ -285,7 +281,21 @@ async def gaussian(qm_input: QMInput, **kwargs) -> SimstackResult:
                 task_id=task_id,
             )
             await context.db.save(file_stack)
-            node_runner.result.files.append(file_stack)
+            file_list.append(file_stack)
+            node_runner.info(f"attached {out_file} to QMResult.files")
+
+        node_runner.result = QMResult(
+            scf_converged=gout.properly_terminated,
+            final_energy=gout.final_energy,
+            energies=gout.energies,
+            final_structure=molecule,
+            structures=MoleculeList(),
+            task_status=TaskStatus.COMPLETED,
+            files=file_list,
+        )
+        node_runner.result.excited_states, node_runner.result.excited_state_transitions = (
+            parse_gaussian_excited_states_file("gaussian.log")
+        )
 
         return node_runner.succeed()
     except Exception as exc:

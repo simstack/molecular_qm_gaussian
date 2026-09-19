@@ -121,3 +121,11 @@ def test_scratch_inputs_omit_missing_checkpoint():
     assert 'input_files.append("gaussian.chk")' in source
     assert GAUSSIAN_RESULT_FILES == ["gaussian.log", "gaussian.chk"]
     assert "GAUSSIAN_INPUT_FILES" not in source
+
+
+def test_checkpoint_files_are_passed_into_qm_result():
+    source = inspect.getsource(gaussian_node)
+    assert "file_list = FileList()" in source
+    assert "files=file_list" in source
+    assert "Gaussian did not write gaussian.chk" in source
+    assert "node_runner.result.files.append" not in source
