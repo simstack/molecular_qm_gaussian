@@ -42,4 +42,8 @@ echo " "
 cp "${TMP_WORK_DIR}/${GAUSSIAN_LOG_FILE}" "${JOB_DIR}/" || { echo "ERROR: Failed to copy log-file '${GAUSSIAN_LOG_FILE}' to submit directory '${JOB_DIR}'"; exit 103; }
 cp "${TMP_WORK_DIR}/${GAUSSIAN_CHK_FILE}" "${JOB_DIR}/" || { echo "ERROR: Failed to copy chk-file '${GAUSSIAN_CHK_FILE}' to submit directory '${JOB_DIR}'"; exit 104; }
 
+echo "### converting checkpoint to formatted checkpoint"
+formchk -MS "${TMP_WORK_DIR}/${GAUSSIAN_CHK_FILE}" "${TMP_WORK_DIR}/gaussian.fchk" || { echo "ERROR: Failed to convert chk-file to fchk"; exit 105; }
+cp "${TMP_WORK_DIR}/gaussian.fchk" "${JOB_DIR}/" || { echo "ERROR: Failed to copy fchk-file to submit directory '${JOB_DIR}'"; exit 108; }
+
 
