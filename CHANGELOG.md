@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v0.0.6 (2026-09-19)
+
+### Bug Fixes
+
+- Run formchk inside gaussian only ([#2](https://github.com/simstack/molecular_qm_gaussian/pull/2),
+  [`556faa2`](https://github.com/simstack/molecular_qm_gaussian/commit/556faa29e8a36d0da1b917787f4b485d22ab34c5))
+
+
 ## v0.0.5 (2026-09-19)
 
 ### Bug Fixes
