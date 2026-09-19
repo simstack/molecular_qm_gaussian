@@ -2,6 +2,15 @@
 
 <!-- version list -->
 
+## v0.0.5 (2026-09-19)
+
+### Bug Fixes
+
+- Emit formatted .fchk checkpoints for FCclasses
+  ([#1](https://github.com/simstack/molecular_qm_gaussian/pull/1),
+  [`294ae50`](https://github.com/simstack/molecular_qm_gaussian/commit/294ae5060c13db9a7a7ce5b70ccec6cb8847f644))
+
+
 ## v0.0.4 (2026-09-19)
 
 ### Bug Fixes
