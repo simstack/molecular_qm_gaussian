@@ -22,6 +22,7 @@ from molecular_qm_gaussian.lib.gaussian_excited_states_parser import (
     parse_gaussian_excited_states_file,
 )
 from molecular_qm_gaussian.lib.gaussian_io import GaussianInput, GaussianOutput
+from molecular_qm_gaussian.lib.opt_artifacts import persist_opt_charts
 
 logger = logging.getLogger("GaussianNode")
 
@@ -208,8 +209,9 @@ async def gaussian(qm_input: QMInput, **kwargs) -> SimstackResult:
         SimstackResult: Parsed Gaussian result.
 
     SimstackResult:
-        result (QMResult): Energies, final structure, optional excited states, and
-            checkpoint files.
+        result (QMResult): Final energy, structure, optional excited states, and
+            checkpoint files. Geometry optimizations also store energy/|g| chart
+            artifacts on the task.
     """
     task_id = kwargs.get("task_id", "NA")
     node_runner: NodeRunner | None = kwargs.get("node_runner", None)
@@ -284,10 +286,16 @@ async def gaussian(qm_input: QMInput, **kwargs) -> SimstackResult:
             file_list.append(file_stack)
             node_runner.info(f"attached {out_file} to QMResult.files")
 
+        if gout.opt_energy_history:
+            await persist_opt_charts(
+                gout.opt_energy_history,
+                gout.opt_grad_history,
+                kwargs,
+            )
+
         node_runner.result = QMResult(
             scf_converged=gout.properly_terminated,
             final_energy=gout.final_energy,
-            energies=gout.energies,
             final_structure=molecule,
             structures=MoleculeList(),
             task_status=TaskStatus.COMPLETED,

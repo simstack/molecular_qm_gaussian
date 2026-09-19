@@ -1,0 +1,27 @@
+ Charge =  0 Multiplicity = 1
+ Berny optimization.
+ SCF Done:  E(RB3LYP) =  -76.100000     A.U. after   5 cycles
+ Cartesian Forces:  Max     0.010000000 RMS     0.005000000
+ Berny optimization.
+ SCF Done:  E(RB3LYP) =  -76.110000     A.U. after   4 cycles
+ Cartesian Forces:  Max     1.000000D-03 RMS     5.000000D-04
+ Berny optimization.
+ SCF Done:  E(RB3LYP) =  -76.123456     A.U. after   3 cycles
+ Cartesian Forces:  Max     0.000100000 RMS     0.000050000
+         Item               Value     Threshold  Converged?
+ Maximum Force            0.000100     0.000450     YES
+ Optimization completed.
+    -- Stationary point found.
+ SCF Done:  E(RB3LYP) =  -76.123456     A.U. after   1 cycles
+
+                         Standard orientation:
+ ---------------------------------------------------------------------
+ Center     Atomic      Atomic             Coordinates (Angstroms)
+ Number     Number       Type             X           Y           Z
+ ---------------------------------------------------------------------
+      1          8           0        0.000000    0.000000    0.117300
+      2          1           0        0.000000    0.757200   -0.469200
+      3          1           0        0.000000   -0.757200   -0.469200
+ ---------------------------------------------------------------------
+
+ Normal termination of Gaussian 16

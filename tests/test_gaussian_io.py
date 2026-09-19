@@ -1,14 +1,18 @@
+import asyncio
+import inspect
 from pathlib import Path
 from types import SimpleNamespace
-import inspect
+from unittest.mock import MagicMock
 
 import pytest
+from odmantic import ObjectId
 from molecular_qm_models import Molecule
 
 from molecular_qm_gaussian.lib.gaussian_excited_states_parser import (
     parse_gaussian_excited_states_file,
 )
 from molecular_qm_gaussian.lib.gaussian_io import GaussianInput, GaussianOutput
+from molecular_qm_gaussian.lib.opt_artifacts import persist_opt_charts
 from molecular_qm_gaussian.nodes.gaussian import (
     GAUSSIAN_RESULT_FILES,
     _basis_set_name,
@@ -129,3 +133,54 @@ def test_checkpoint_files_are_passed_into_qm_result():
     assert "files=file_list" in source
     assert "Gaussian did not write gaussian.chk" in source
     assert "node_runner.result.files.append" not in source
+
+
+def test_qm_result_does_not_store_iteration_energies():
+    source = inspect.getsource(gaussian_node)
+    assert "energies=gout.energies" not in source
+    assert "persist_opt_charts" in source
+
+
+def test_gaussian_output_skips_opt_history_without_berny():
+    gout = GaussianOutput(str(DATA / "sample.log"))
+    assert gout.opt_energy_history == []
+    assert gout.opt_grad_history == []
+
+
+def test_gaussian_output_parses_opt_history_and_ignores_post_opt_scf():
+    gout = GaussianOutput(str(DATA / "sample_opt.log"))
+    assert gout.final_energy == -76.123456
+    assert [row["step"] for row in gout.opt_energy_history] == [1, 2, 3]
+    assert gout.opt_energy_history[0]["energy"] == -76.1
+    assert gout.opt_energy_history[1]["energy"] == -76.11
+    assert gout.opt_energy_history[2]["energy"] == -76.123456
+    assert gout.opt_grad_history[0]["grad_norm"] == pytest.approx(0.005)
+    assert gout.opt_grad_history[1]["grad_norm"] == pytest.approx(5.0e-4)
+    assert gout.opt_grad_history[2]["grad_norm"] == pytest.approx(5.0e-5)
+
+
+def test_persist_opt_charts_keeps_last_20_steps(monkeypatch):
+    saved = []
+
+    class FakeDB:
+        async def save(self, obj):
+            saved.append(obj)
+            return obj
+
+    monkeypatch.setattr(
+        "molecular_qm_gaussian.lib.opt_artifacts._get_db",
+        lambda: FakeDB(),
+    )
+    energy = [{"step": i, "energy": float(-i)} for i in range(1, 26)]
+    grad = [{"step": i, "grad_norm": 0.1 / i} for i in range(1, 26)]
+    asyncio.run(
+        persist_opt_charts(
+            energy, grad, {"task_id": str(ObjectId()), "node_runner": MagicMock()}
+        )
+    )
+    energy_charts = [chart for chart in saved if chart.series[0].yKey == "energy"]
+    grad_charts = [chart for chart in saved if chart.series[0].yKey == "grad_norm"]
+    assert energy_charts[-1].title.text == "Gaussian optimization energy"
+    assert grad_charts[-1].title.text == "Gaussian optimization gradient norm"
+    assert [row["step"] for row in energy_charts[-1].data] == list(range(6, 26))
+    assert [row["step"] for row in grad_charts[-1].data] == list(range(6, 26))

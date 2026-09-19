@@ -33,8 +33,21 @@ _CHARGE_MULT_RE = re.compile(
     re.IGNORECASE,
 )
 _SCF_DONE_RE = re.compile(r"SCF Done:\s+\S+\s+=\s+([+-]?\d+\.\d+)")
+_OPT_SCF_DONE_RE = re.compile(
+    r"SCF Done:\s+\S+\s+=\s+([+-]?\d+\.\d+(?:[DEde][+-]?\d+)?)"
+)
+_CART_FORCES_RE = re.compile(
+    r"Cartesian Forces:\s+Max\s+([+-]?\d+\.\d+(?:[DEde][+-]?\d+)?)"
+    r"\s+RMS\s+([+-]?\d+\.\d+(?:[DEde][+-]?\d+)?)",
+    re.IGNORECASE,
+)
 _ORIENT_ATOM_RE = re.compile(
     r"^\s+\d+\s+(\d+)\s+\d+\s+([+-]?\d+\.\d+)\s+([+-]?\d+\.\d+)\s+([+-]?\d+\.\d+)"
+)
+_OPT_END_MARKERS = (
+    "Optimization completed",
+    "Optimization stopped",
+    "-- Stationary point found",
 )
 
 
@@ -42,6 +55,41 @@ def _symbol_from_atomic_number(z: int) -> str:
     if 0 < z < len(_ATOMIC_SYMBOLS):
         return _ATOMIC_SYMBOLS[z]
     return f"X{z}"
+
+
+def _gaussian_float(text: str) -> float:
+    return float(text.replace("D", "E").replace("d", "e"))
+
+
+def parse_optimization_history(text: str) -> tuple[list[dict], list[dict]]:
+    """Collect Berny opt-step energies and Cartesian RMS forces from a Gaussian log."""
+    energy_history: list[dict] = []
+    grad_history: list[dict] = []
+    in_opt = False
+    current_energy = None
+    step = 0
+    for line in text.splitlines():
+        stripped = line.strip()
+        if any(marker in stripped for marker in _OPT_END_MARKERS):
+            in_opt = False
+            continue
+        if "Berny optimization" in stripped:
+            in_opt = True
+            continue
+        if not in_opt:
+            continue
+        scf_match = _OPT_SCF_DONE_RE.search(line)
+        if scf_match:
+            current_energy = _gaussian_float(scf_match.group(1))
+            continue
+        forces_match = _CART_FORCES_RE.search(line)
+        if forces_match and current_energy is not None:
+            step += 1
+            energy_history.append({"step": step, "energy": current_energy})
+            grad_history.append(
+                {"step": step, "grad_norm": _gaussian_float(forces_match.group(2))}
+            )
+    return energy_history, grad_history
 
 
 def _route_dict_to_string(route_parameters: Optional[Mapping[str, Any]]) -> str:
@@ -124,6 +172,8 @@ class GaussianOutput:
         self.charge = 0
         self.spin_multiplicity = 1
         self.energies: list[float] = []
+        self.opt_energy_history: list[dict] = []
+        self.opt_grad_history: list[dict] = []
         self.properly_terminated = "Normal termination of Gaussian" in self._text
         self.final_structure: Optional[Molecule] = None
         self._parse()
@@ -141,6 +191,9 @@ class GaussianOutput:
             self.spin_multiplicity = int(charge_match.group(2))
 
         self.energies = [float(v) for v in _SCF_DONE_RE.findall(self._text)]
+        self.opt_energy_history, self.opt_grad_history = parse_optimization_history(
+            self._text
+        )
 
         last_block = None
         for label in ("Standard orientation:", "Input orientation:"):
