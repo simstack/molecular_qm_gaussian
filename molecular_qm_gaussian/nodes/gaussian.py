@@ -318,8 +318,6 @@ async def gaussian(qm_input: QMInput, **kwargs) -> SimstackResult:
     finally:
         await node_runner.make_info_files("*.com")
 
-
-@node(parameters=Parameters(queue=Queue.SLURM_QUEUE.value, in_docker=False))
 async def formchk_checkpoint(file_stack: FileStack, **kwargs) -> SimstackResult:
     """Convert a Gaussian binary ``.chk`` to formatted ``.fchk``.
 
