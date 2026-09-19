@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v0.0.4 (2026-09-19)
+
+### Bug Fixes
+
+- Persist checkpoint files on QMResult.files
+  ([`6b84c94`](https://github.com/simstack/molecular_qm_gaussian/commit/6b84c94313572ea465b25ade6bbad5ad2e6f5bda))
+
+
 ## v0.0.3 (2026-09-10)
 
 
