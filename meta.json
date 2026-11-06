@@ -1,0 +1,16 @@
+{
+  "title": "Molecular QM Gaussian",
+  "workflow_environment": "SimStack",
+  "description": "SimStack node for Gaussian 16 calculations, with input generation, execution through a configured Gaussian installation, and output parsing.",
+  "authors": [
+    "Wolfgang Wenzel",
+    "Phillip Dullinger"
+  ],
+  "release": "v0.0.7",
+  "keywords": [
+    "SimStack",
+    "molecular quantum mechanics",
+    "Gaussian 16",
+    "electronic structure"
+  ]
+}
